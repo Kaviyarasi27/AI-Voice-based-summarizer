@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline Voice Summarizer</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0d0d0d;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: #1e1e2f;
+      padding: 30px;
+      border-radius: 12px;
+      width: 700px;
+      max-width: 95%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+    h1 {
+      color: #00e0ff;
+      margin-bottom: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 180px;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      margin-bottom: 12px;
+      font-size: 1rem;
+      resize: none;
+    }
+    button {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 8px;
+      margin: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1rem;
+      transition: transform 0.2s;
+    }
+    button:hover { transform: scale(1.05); }
+    #speakBtn { background: linear-gradient(90deg, #7c5cff, #00e0ff); color: #fff; }
+    #summarizeBtn { background: linear-gradient(90deg, #00e0ff, #7c5cff); color: #fff; }
+    #output {
+      margin-top: 18px;
+      padding: 12px;
+      background: #252539;
+      border-radius: 8px;
+      min-height: 60px;
+      color: #ddd;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎤 Offline Voice Summarizer</h1>
+    <textarea id="input" placeholder="Type or speak your text here..."></textarea>
+    <br>
+    <button id="speakBtn">🎙 Start Speaking</button>
+    <button id="summarizeBtn">📝 Summarize</button>
+    <div id="output">⚡ Your summary will appear here...</div>
+  </div>
+
+  <script>
+    // ---------------------------
+    // Extractive Summarizer Logic
+    // ---------------------------
+    function extractiveSummarize(text, maxSentences = 3) {
+      const sentences = text.split(/[.!?]\s/).filter(s => s.length > 20);
+      if (sentences.length <= maxSentences) return text;
+      // Simple ranking by sentence length
+      const ranked = sentences.sort((a, b) => b.length - a.length);
+      return ranked.slice(0, maxSentences).join(". ") + ".";
+    }
+
+    // Handle Summarize button
+    document.getElementById("summarizeBtn").addEventListener("click", () => {
+      const input = document.getElementById("input").value.trim();
+      if (!input) {
+        document.getElementById("output").textContent = "⚠️ Please enter some text.";
+        return;
+      }
+      const summary = extractiveSummarize(input, 3);
+      document.getElementById("output").textContent = "✅ Summary: " + summary;
+    });
+
+    // ---------------------------
+    // Voice Input (Speech API)
+    // ---------------------------
+    const speakBtn = document.getElementById("speakBtn");
+    let recognition;
+
+    if ("webkitSpeechRecognition" in window) {
+      recognition = new webkitSpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = "en-US";
+
+      recognition.onstart = () => { speakBtn.textContent = "🎙 Listening..."; };
+      recognition.onend = () => { speakBtn.textContent = "🎤 Start Speaking"; };
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById("input").value += " " + transcript;
+      };
+
+      speakBtn.addEventListener("click", () => recognition.start());
+    } else {
+      speakBtn.disabled = true;
+      speakBtn.textContent = "❌ Voice not supported";
+    }
+  </script>
+</body>
+</html>
